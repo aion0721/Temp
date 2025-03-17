@@ -1,0 +1,42 @@
+# ディレクトリパスを指定
+$directoryPath = ""
+
+# CSV出力先を指定
+$csvOutputPath = ""
+
+# EMLファイルを解析し、必要な情報を抽出
+$emlFiles = Get-ChildItem -Path $directoryPath -Filter *.eml
+
+$emlData = @()
+foreach ($file in $emlFiles) {
+    $adoDbStream = New-Object -ComObject ADODB.Stream
+    $adoDbStream.Open()
+    $adoDbStream.LoadFromFile($file.FullName)
+
+    $cdoMessage = New-Object -ComObject CDO.Message
+    $cdoMessage.DataSource.OpenObject($adoDbStream, "_Stream")
+
+    # Toのメールアドレスを抽出
+    $toAddress = $cdoMessage.To
+
+    # 一行目の文字列を抽出し、開業を除去
+    $firstLine = $cdoMessage.TextBody.Split("`n")[0]
+    $firstLine = $firstLine -replace '^Re: ', '' -replace '^Fwd: ', ''
+
+    # 改行を除去（Windows環境用）
+    $firstLine = $firstLine -replace "`r`n", '' -replace "`n", '' -replace "`r", ''
+
+    # データをPSObjectに格納
+    $emlData += [PSCustomObject]@{
+        ToAddress = $toAddress
+        FirstLine = $firstLine
+    }
+
+    # COMオブジェクトを解放
+    $adoDbStream.Close()
+    [Runtime.InteropServices.Marshal]::ReleaseComObject($adoDbStream) | Out-Null
+    [Runtime.InteropServices.Marshal]::ReleaseComObject($cdoMessage) | Out-Null
+}
+
+# CSVに出力
+$emlData | Export-Csv -Path $csvOutputPath -NoTypeInformation -Encoding UTF8
