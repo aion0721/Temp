@@ -19,6 +19,17 @@ foreach ($file in $emlFiles) {
     # Toのメールアドレスを抽出
     $toAddress = $cdoMessage.To
 
+    # メールアドレス部分を抽出（<>内）
+    $emailPart = $toAddress -match '<(.+)>'
+    if ($emailPart) {
+        $email = $Matches[1]
+    } else {
+        $email = $toAddress
+    }
+
+    # ドメイン部分を抽出
+    $domain = ($email -split '@')[1]
+
     # ドメイン部分を抽出
     $domain = ($toAddress -split '@')[1]
 
