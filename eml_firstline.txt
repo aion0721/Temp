@@ -19,6 +19,9 @@ foreach ($file in $emlFiles) {
     # Toのメールアドレスを抽出
     $toAddress = $cdoMessage.To
 
+    # ドメイン部分を抽出
+    $domain = ($toAddress -split '@')[1]
+
     # 一行目の文字列を抽出し、開業を除去
     $firstLine = $cdoMessage.TextBody.Split("`n")[0]
     $firstLine = $firstLine -replace '^Re: ', '' -replace '^Fwd: ', ''
@@ -26,10 +29,14 @@ foreach ($file in $emlFiles) {
     # 改行を除去（Windows環境用）
     $firstLine = $firstLine -replace "`r`n", '' -replace "`n", '' -replace "`r", ''
 
+    # 「>`」を除去
+    $domain = $domain -replace '>', ''
+
     # データをPSObjectに格納
     $emlData += [PSCustomObject]@{
         ToAddress = $toAddress
         FirstLine = $firstLine
+        Domain = $domain
     }
 
     # COMオブジェクトを解放
